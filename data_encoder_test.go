@@ -2,6 +2,7 @@ package pdf417
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,12 +21,12 @@ func TestEncode(t *testing.T) {
 
 	// When starting with text, the first code word does not need to be the switch
 	result := encoder.Encode("ABC123")
-	assert.NotEqual(TEXT_SWITCH_CODE_WORD, result[0])
+	assert.NotEqual(TextSwitchCodeWord, result[0])
 	assert.Equal([]int{1, 89, 902, 1, 223}, result)
 
 	// When starting with numbers, we do need to switchresult := encoder.Encode("ABC123")
 	result = encoder.Encode("123ABC")
-	assert.Equal(NUMBER_SWITCH_CODE_WORD, result[0])
+	assert.Equal(NumberSwitchCodeWord, result[0])
 	assert.Equal([]int{902, 1, 223, 900, 1, 89}, result)
 
 	// Also with bytes

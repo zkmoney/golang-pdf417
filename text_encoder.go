@@ -1,7 +1,7 @@
 package pdf417
 
-// Code word used to switch to Text mode.
-const TEXT_SWITCH_CODE_WORD int = 900
+// TextSwitchCodeWord is used to switch to Text mode.
+const TextSwitchCodeWord int = 900
 
 // Since each code word consists of 2 characters, a padding value is
 // needed when encoding a single character. 29 is used as padding because
@@ -140,11 +140,11 @@ func (encoder TextEncoder) CanEncode(char string) bool {
 }
 
 func (TextEncoder) GetSwitchCode(data string) int {
-	return TEXT_SWITCH_CODE_WORD
+	return TextSwitchCodeWord
 }
 
 func (encoder TextEncoder) Encode(data string, addSwitchCode bool) []int {
-	interim := encodeinterim(encoder, data);
+	interim := encodeinterim(encoder, data)
 
 	return encodeFinal(interim, addSwitchCode)
 }
@@ -157,7 +157,7 @@ func encodeinterim(encoder TextEncoder, data string) []int {
 	for i := 0; i < len(data); i++ {
 		char := string(data[i])
 
-		if (existsInSubmode(encoder, char, submode) == false) {
+		if existsInSubmode(encoder, char, submode) == false {
 			prevSubmode := submode
 
 			submode = getSubmode(encoder, char)
@@ -179,7 +179,7 @@ func encodeinterim(encoder TextEncoder, data string) []int {
 func getSubmode(encoder TextEncoder, char string) string {
 	_, ok := encoder.ReverseLookup[char]
 
-	if ! ok {
+	if !ok {
 		panic("Weird, not found")
 	}
 
@@ -208,7 +208,7 @@ func encodeFinal(codes []int, addSwitchCode bool) []int {
 	codeWords := []int{}
 
 	if addSwitchCode {
-		codeWords = append(codeWords, TEXT_SWITCH_CODE_WORD)
+		codeWords = append(codeWords, TextSwitchCodeWord)
 	}
 
 	chunks := [][]int{}
@@ -219,7 +219,7 @@ func encodeFinal(codes []int, addSwitchCode bool) []int {
 
 		i++
 
-		if i % 2 == 0 {
+		if i%2 == 0 {
 			chunks = append(chunks, chunkPart)
 
 			chunkPart = []int{}
@@ -237,7 +237,7 @@ func encodeFinal(codes []int, addSwitchCode bool) []int {
 
 		codeWords = append(
 			codeWords,
-			30 * chunk[0] + chunk[1],
+			30*chunk[0]+chunk[1],
 		)
 	}
 
@@ -247,7 +247,7 @@ func encodeFinal(codes []int, addSwitchCode bool) []int {
 func getCharacterCode(encoder TextEncoder, char string, submode string) int {
 	cw, ok := encoder.ReverseLookup[char][submode]
 
-	if ! ok {
+	if !ok {
 		panic("This is not possible")
 	}
 
