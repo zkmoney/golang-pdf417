@@ -2,6 +2,7 @@ package pdf417
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,9 +12,9 @@ func TestEncode2(t *testing.T) {
 	barcode := Encode("Ruud", 6, 2)
 
 	assert.Equal(barcode.Data, "Ruud")
-	assert.Equal(barcode.Columns, DEFAULT_COLUMNS)
+	assert.Equal(barcode.Columns, DefaultColumns)
 	assert.Equal(barcode.Rows, 2)
-	assert.Equal(barcode.SecurityLevel, DEFAULT_SECURITY_LEVEL)
+	assert.Equal(barcode.SecurityLevel, DefaultSecurityLevel)
 	assert.Equal(barcode.CodeWords, []int{4, 537, 620, 119, 266, 457, 253, 518, 74, 589, 901, 37})
 	assert.Equal(
 		[][]int{
@@ -43,7 +44,7 @@ func TestEncode2(t *testing.T) {
 			},
 		},
 		barcode.Codes,
-	);
+	)
 	assert.Equal(
 		[][]bool{[]bool{true, true, true, true, true, true, true, true, false, true, false, true, false, true, false, false, false, true, true, true, false, true, false, true, false, true, true, true, false, false, false, false, false, false, true, true, true, true, false, true, false, true, false, false, true, true, true, true, false, false, false, true, false, false, true, true, false, false, false, true, true, false, false, false, false, false, true, false, true, true, true, false, false, false, true, true, false, true, false, false, true, true, false, false, false, true, true, false, true, false, false, false, false, true, true, false, false, false, true, true, true, false, true, false, false, true, false, false, false, true, true, false, false, true, true, false, false, false, false, true, true, true, false, false, true, true, false, false, true, false, false, false, false, true, true, false, true, true, true, true, true, false, true, false, true, false, false, true, true, true, true, true, false, true, true, true, true, true, true, true, false, true, false, false, false, true, false, true, false, false, true}, []bool{true, true, true, true, true, true, true, true, false, true, false, true, false, true, false, false, false, true, true, true, true, true, true, false, true, false, true, false, false, false, true, true, true, false, true, true, false, false, true, false, true, true, true, true, false, false, false, true, true, false, false, true, true, true, true, false, false, false, true, false, false, true, true, false, false, true, true, false, true, true, true, true, false, true, false, false, true, false, false, false, false, true, false, false, false, true, true, true, false, false, false, true, false, false, false, true, true, true, false, true, true, false, true, true, false, true, true, true, true, true, true, false, true, false, true, true, true, false, false, true, true, true, false, true, false, true, true, true, false, false, false, false, true, true, false, false, true, true, true, true, true, false, true, false, true, false, true, true, false, false, false, false, false, true, true, true, true, true, true, true, false, true, false, false, false, true, false, true, false, false, true}},
 		barcode.PixelGrid(),

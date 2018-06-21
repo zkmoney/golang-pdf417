@@ -1,16 +1,14 @@
 package pdf417
 
 import (
-	"regexp"
 	"math"
 	"math/big"
+	"regexp"
 )
 
-const NUMBER_SWITCH_CODE_WORD int = 902
+const NumberSwitchCodeWord int = 902
 
-type NumberEncoder struct {
-
-}
+type NumberEncoder struct{}
 
 func CreateNumberEncoder() *NumberEncoder {
 	return new(NumberEncoder)
@@ -31,7 +29,7 @@ func (encoder NumberEncoder) CanEncode(char string) bool {
 }
 
 func (encoder NumberEncoder) GetSwitchCode(data string) int {
-	return NUMBER_SWITCH_CODE_WORD
+	return NumberSwitchCodeWord
 }
 
 func (encoder NumberEncoder) Encode(digits string, addSwitchCode bool) []int {
@@ -40,8 +38,8 @@ func (encoder NumberEncoder) Encode(digits string, addSwitchCode bool) []int {
 
 	codeWords := []int{}
 
-	if (addSwitchCode) {
-		codeWords = append(codeWords, NUMBER_SWITCH_CODE_WORD)
+	if addSwitchCode {
+		codeWords = append(codeWords, NumberSwitchCodeWord)
 	}
 
 	for i := 0; i < chunkCount; i++ {
@@ -63,9 +61,9 @@ func (encoder NumberEncoder) Encode(digits string, addSwitchCode bool) []int {
 func encodeChunk(chunkInput string) []int {
 	chunk := big.NewInt(0)
 
-	_, ok := chunk.SetString("1" + chunkInput, 10)
+	_, ok := chunk.SetString("1"+chunkInput, 10)
 
-	if ! ok {
+	if !ok {
 		panic("Failed converting")
 	}
 

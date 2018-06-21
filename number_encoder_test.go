@@ -2,6 +2,7 @@ package pdf417
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,8 +33,8 @@ func TestNumberEncoder_GetSwitchCode(t *testing.T) {
 
 	encoder := CreateNumberEncoder()
 
-	assert.Equal(NUMBER_SWITCH_CODE_WORD, encoder.GetSwitchCode("123"))
-	assert.Equal(NUMBER_SWITCH_CODE_WORD, encoder.GetSwitchCode("foo"))
+	assert.Equal(NumberSwitchCodeWord, encoder.GetSwitchCode("123"))
+	assert.Equal(NumberSwitchCodeWord, encoder.GetSwitchCode("foo"))
 }
 
 func TestNumberEncoder_Encode(t *testing.T) {

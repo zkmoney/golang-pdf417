@@ -1,86 +1,144 @@
 package pdf417
 
 import (
-	"math"
-	"strconv"
-	"github.com/boombuler/barcode"
 	"image"
 	"image/color"
+	"math"
+	"strconv"
+
+	"github.com/boombuler/barcode"
 )
 
-const MIN_COLUMNS = 1;
-const MAX_COLUMNS = 30;
-const DEFAULT_COLUMNS = 6;
+const MinColumns = 1
+const MaxColumns = 30
+const DefaultColumns = 6
 
-const MIN_SECURITY_LEVEL = 0;
-const MAX_SECURITY_LEVEL = 8;
-const DEFAULT_SECURITY_LEVEL = 2;
+const MinSecurityLevel = 0
+const MaxSecurityLevel = 8
+const DefaultSecurityLevel = 2
 
-const MIN_ROWS = 3;
-const MAX_ROWS = 90;
-const MAX_CODE_WORDS = 925;
+const MinRows = 3
+const MaxRows = 90
+const MaxCodeWords = 925
 
-const START_CHARACTER = 0x1fea8;
-const STOP_CHARACTER  = 0x3fa29;
+const START_CHARACTER = 0x1fea8
+const STOP_CHARACTER = 0x3fa29
 
-const PADDING_CODE_WORD = 900;
+const PADDING_CODE_WORD = 900
 
 type Barcode struct {
-	Data string
-	CodeWords []int
-	Columns int
-	Rows int
-	Codes [][]int
+	Data          string
+	Columns       int
+	Rows          int
+	RowHeight     int
 	SecurityLevel int
+	Compact       bool
+	Padding       int
+
+	Codes     [][]int
+	CodeWords []int
 	pixelGrid [][]bool
 }
 
-func (c *Barcode) Metadata() barcode.Metadata {
-	return barcode.Metadata{"Pdf417", 2}
+// Metadata returns the barcode's kind and dimensions
+func (bc *Barcode) Metadata() barcode.Metadata {
+	kind := "Pdf417"
+	if bc.Compact {
+		kind = "pdf417-compact"
+	}
+	return barcode.Metadata{kind, 2}
 }
 
-func (c *Barcode) Content() string {
-	return c.Data
+// Content returns the barcodes original data
+func (bc *Barcode) Content() string {
+	return bc.Data
 }
 
-func (c *Barcode) CheckSum() int {
+// CheckSum @DOC
+func (bc *Barcode) CheckSum() int {
 	return 0
 }
 
-func (c *Barcode) ColorModel() color.Model {
+// ColorModel returns the color.Model for use in image rendering
+func (bc *Barcode) ColorModel() color.Model {
 	return color.Gray16Model
 }
 
-func (c *Barcode) Bounds() image.Rectangle {
-	grid := c.PixelGrid()
+// Bounds returns the image.Rectangle bounds to render the image
+func (bc *Barcode) Bounds() image.Rectangle {
+	grid := bc.PixelGrid()
 
 	return image.Rect(0, 0, len(grid[0]), len(grid))
 }
 
-func (c *Barcode) At(x, y int) color.Color {
-	grid := c.PixelGrid()
+// At determines the color to render at a given point in the vector grid
+func (bc *Barcode) At(x, y int) color.Color {
+	grid := bc.PixelGrid()
 
 	if grid[y] != nil && grid[y][x] == true {
 		return color.Black
 	}
-
 	return color.White
 }
 
-func Encode(data string, columns int, securityLevel int) *Barcode {
-	barcode := new(Barcode)
-	barcode.Data = data
-	barcode.Columns = columns
-	barcode.SecurityLevel = securityLevel
+// Option is a functional option to control how a barcode is encoded
+type Option func(*Barcode)
 
-	codeWords := encodeData(barcode)
+// SecurityLevel sets the error correction
+func SecurityLevel(level int) Option {
+	return func(bc *Barcode) {
+		bc.SecurityLevel = level
+	}
+}
 
-	grid := [][]int{};
+// Columns sets the number of columns to render
+func Columns(cols int) Option {
+	return func(bc *Barcode) {
+		bc.Columns = cols
+	}
+}
 
-	for i := 0; i < len(codeWords); i += barcode.Columns {
+// RowHeight sets row height scaling of the barcode
+func RowHeight(rowHeight int) Option {
+	return func(bc *Barcode) {
+		bc.RowHeight = rowHeight
+	}
+}
+
+// Compact sets if the barcode should be rendered in the truncated style
+func Compact(compact bool) Option {
+	return func(bc *Barcode) {
+		bc.Compact = compact
+	}
+}
+
+// Padding sets the horizontal padding of the pixel grid
+func Padding(pad int) Option {
+	return func(bc *Barcode) {
+		bc.Padding = pad
+	}
+}
+
+// Encode creates a Barcode from the passed in data and options
+func Encode(data string, opts ...Option) *Barcode {
+	bc := new(Barcode)
+	bc.Data = data
+	bc.Columns = 1
+	bc.SecurityLevel = DefaultSecurityLevel
+	bc.RowHeight = 1
+
+	for _, fn := range opts {
+		fn(bc)
+	}
+
+	codeWords := encodeData(bc)
+
+	grid := [][]int{}
+
+	for i := 0; i < len(codeWords); i += bc.Columns {
 		grid = append(
 			grid,
-			codeWords[i:min(i + barcode.Columns, len(codeWords))],
+			codeWords[i:min(i+bc.Columns, len(codeWords))],
 		)
 	}
 
@@ -94,8 +152,8 @@ func Encode(data string, columns int, securityLevel int) *Barcode {
 		left := getLeftCodeWord(
 			rowNum,
 			rows,
-			barcode.Columns,
-			barcode.SecurityLevel,
+			bc.Columns,
+			bc.SecurityLevel,
 		)
 		rowCodes = append(rowCodes, getCode(table, left))
 
@@ -103,27 +161,29 @@ func Encode(data string, columns int, securityLevel int) *Barcode {
 			rowCodes = append(rowCodes, getCode(table, word))
 		}
 
-		right := getRightCodeWord(rowNum, rows, barcode.Columns, barcode.SecurityLevel)
-		rowCodes = append(rowCodes, getCode(table, right))
+		if !bc.Compact {
+			right := getRightCodeWord(rowNum, rows, bc.Columns, bc.SecurityLevel)
+			rowCodes = append(rowCodes, getCode(table, right))
 
-		rowCodes = append(rowCodes, STOP_CHARACTER)
+			rowCodes = append(rowCodes, STOP_CHARACTER)
+		}
 
 		codes = append(codes, rowCodes)
 	}
 
-	barcode.Rows = rows
-	barcode.Codes = codes
-	barcode.CodeWords = codeWords
+	bc.Rows = rows
+	bc.Codes = codes
+	bc.CodeWords = codeWords
 
-	return barcode
+	return bc
 }
 
 func getLeftCodeWord(rowNum int, rows int, columns int, securityLevel int) int {
-	tableId := rowNum % 3
+	tableID := rowNum % 3
 
 	var x int
 
-	switch tableId {
+	switch tableID {
 	case 0:
 		x = (rows - 3) / 3
 	case 1:
@@ -133,15 +193,15 @@ func getLeftCodeWord(rowNum int, rows int, columns int, securityLevel int) int {
 		x = columns - 1
 	}
 
-	return 30 * (rowNum / 3) + x
+	return 30*(rowNum/3) + x
 }
 
 func getRightCodeWord(rowNum int, rows int, columns int, securityLevel int) int {
-	tableId := rowNum % 3
+	tableID := rowNum % 3
 
 	var x int
 
-	switch tableId {
+	switch tableID {
 	case 0:
 		x = columns - 1
 	case 1:
@@ -151,7 +211,7 @@ func getRightCodeWord(rowNum int, rows int, columns int, securityLevel int) int 
 		x += (rows - 1) % 3
 	}
 
-	return 30 * (rowNum / 3) + x
+	return 30*(rowNum/3) + x
 }
 
 func min(a, b int) int {
@@ -165,7 +225,7 @@ func encodeData(barcode *Barcode) []int {
 	dataEncoder := CreateDataEncoder()
 	dataWords := dataEncoder.Encode(barcode.Data)
 
-	ecCount := int(math.Pow(2, float64(barcode.SecurityLevel + 1)))
+	ecCount := int(math.Pow(2, float64(barcode.SecurityLevel+1)))
 	dataCount := len(dataWords)
 
 	padWords := getPadding(dataCount, ecCount, barcode.Columns)
@@ -604,19 +664,26 @@ var codes = [][]int{
 	},
 }
 
-func getCode(tableId int, word int) int {
-	return codes[tableId][word]
+func getCode(tableID int, word int) int {
+	return codes[tableID][word]
 }
 
-func (barcode *Barcode) PixelGrid() [][]bool {
-	if len(barcode.pixelGrid) != 0 {
-		return barcode.pixelGrid
+// PixelGrid computes and returns a vector of booleans that tells if a point
+// should be black or white
+func (bc *Barcode) PixelGrid() [][]bool {
+	if len(bc.pixelGrid) != 0 {
+		return bc.pixelGrid
 	}
 
-	barcode.pixelGrid = [][]bool{}
+	bc.pixelGrid = [][]bool{}
 
-	for _, row := range barcode.Codes {
-		pixelRow := []bool{}
+	for _, row := range bc.Codes {
+		var pixelRow []bool
+
+		for i := 0; i < bc.Padding; i++ {
+			pixelRow = append(pixelRow, false)
+		}
+
 		for _, value := range row {
 			bin := strconv.FormatInt(int64(value), 2)
 			length := len(bin)
@@ -626,8 +693,18 @@ func (barcode *Barcode) PixelGrid() [][]bool {
 			}
 		}
 
-		barcode.pixelGrid = append(barcode.pixelGrid, pixelRow)
+		if bc.Compact {
+			pixelRow = append(pixelRow, true)
+		}
+
+		for i := 0; i < bc.Padding; i++ {
+			pixelRow = append(pixelRow, false)
+		}
+
+		for i := 0; i < bc.RowHeight; i++ {
+			bc.pixelGrid = append(bc.pixelGrid, pixelRow)
+		}
 	}
 
-	return barcode.pixelGrid
+	return bc.pixelGrid
 }
